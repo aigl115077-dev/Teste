@@ -282,10 +282,6 @@
         <div id="tab-upload" class="tab-content active">
             <form id="uploadForm" onsubmit="handleUpload(event)">
                 
-                <div class="form-group">
-                    <label for="ghRepo">Repositório GitHub (usuario/repositorio)</label>
-                    <input type="text" id="ghRepo" class="form-control" placeholder="ex: meu-usuario/meu-repo" required>
-                </div>
 
                 <div class="form-group">
                     <label for="ghBranch">Branch</label>
@@ -402,9 +398,8 @@
                 return;
             }
 
-            const repo = document.getElementById('ghRepo').value.trim();
-            const branch = document.getElementById('ghBranch').value.trim() || 'main';
-            const commitMsg = document.getElementById('commitMsg').value.trim();
+            const branch = (document.getElementById('ghBranch')?.value || 'main').trim();
+            const commitMsg = (document.getElementById('commitMsg')?.value || '').trim();
 
             statusEl.className = 'status-msg';
             statusEl.style.display = 'block';
@@ -415,14 +410,13 @@
                 // Converter arquivo para Base64
                 const base64Content = await fileToBase64(selectedFile);
 
-                // Enviar para a rota da API da Vercel (onde o GITHUB_TOKEN está protegido)
+                // Enviar para a rota da API da Vercel (onde o GITHUB_TOKEN e GITHUB_REPO estão protegidos)
                 const res = await fetch('/api/upload', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        repo: repo,
                         branch: branch,
                         commitMsg: commitMsg,
                         fileName: selectedFile.name,
