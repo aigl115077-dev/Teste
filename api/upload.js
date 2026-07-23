@@ -7,11 +7,14 @@ export default async function handler(req, res) {
 
     try {
         const filename = req.query.filename || `upload-${Date.now()}`;
-        const token = process.env.BLOB_READ_WRITE_TOKEN;
+        
+        // Procura dinamicamente o token caso a Vercel tenha usado um prefixo (ex: testeblob_READ_WRITE_TOKEN)
+        const tokenKey = Object.keys(process.env).find(k => k.endsWith('_READ_WRITE_TOKEN')) || 'BLOB_READ_WRITE_TOKEN';
+        const token = process.env.BLOB_READ_WRITE_TOKEN || process.env[tokenKey];
 
         if (!token) {
             return res.status(500).json({ 
-                message: 'A variável BLOB_READ_WRITE_TOKEN não foi encontrada no ambiente da Vercel. Por favor, adicione-a manualmente nas configurações do projeto (Settings -> Environment Variables).' 
+                message: 'A variável de token do Vercel Blob não foi encontrada nas configurações do projeto.' 
             });
         }
 

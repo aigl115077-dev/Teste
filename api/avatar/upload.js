@@ -7,7 +7,8 @@ export default async function handler(req, res) {
 
     try {
         const filename = req.query.filename || `avatar-${Date.now()}`;
-        const token = process.env.BLOB_READ_WRITE_TOKEN;
+        const tokenKey = Object.keys(process.env).find(k => k.endsWith('_READ_WRITE_TOKEN')) || 'BLOB_READ_WRITE_TOKEN';
+        const token = process.env.BLOB_READ_WRITE_TOKEN || process.env[tokenKey];
 
         const blob = await put(filename, req, {
             access: 'public',
