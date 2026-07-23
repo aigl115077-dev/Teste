@@ -7,10 +7,18 @@ export default async function handler(req, res) {
 
     try {
         const filename = req.query.filename || `upload-${Date.now()}`;
+        const token = process.env.BLOB_READ_WRITE_TOKEN;
+
+        if (!token) {
+            return res.status(500).json({ 
+                message: 'A variável BLOB_READ_WRITE_TOKEN não foi encontrada no ambiente da Vercel. Por favor, adicione-a manualmente nas configurações do projeto (Settings -> Environment Variables).' 
+            });
+        }
 
         // Envia o stream do arquivo para o Vercel Blob Storage
         const blob = await put(filename, req, {
             access: 'public',
+            token: token,
         });
 
         return res.status(200).json({
