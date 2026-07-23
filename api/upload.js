@@ -4,27 +4,37 @@ export default async function handler(req, res) {
     }
 
     try {
-        const { repo, branch, commitMsg, fileName, fileBase64 } = req.body;
+        const { branch, commitMsg, fileName, fileBase64 } = req.body;
 
-        // Recupera o token da variável de ambiente configurada na Vercel
+        // Recupera as variáveis de ambiente configuradas na Vercel
         const token = process.env.GITHUB_TOKEN;
+        const repo = process.env.GITHUB_REPO || req.body.repo;
+
         if (!token) {
             return res.status(500).json({ 
                 message: 'A variável de ambiente GITHUB_TOKEN não está configurada na Vercel.' 
             });
         }
 
-        if (!repo || !fileName || !fileBase64) {
+        if (!repo) {
+            return res.status(500).json({ 
+                message: 'A variável de ambiente GITHUB_REPO (ex: usuario/repositorio) não está configurada na Vercel.' 
+            });
+        }
+
+        if (!fileName || !fileBase64) {
             return res.status(400).json({ 
-                message: 'Dados insuficientes. Forneça o repositório, nome do arquivo e conteúdo.' 
+                message: 'Nenhum arquivo fornecido.' 
             });
         }
 
         const targetBranch = branch || 'main';
-        const message = commitMsg || `Upload ${fileName} via Vercel`;
+        const message = commitMsg || `Upload ${fileName} para a raiz via Web Interface`;
+        
+        // Salva diretamente na raiz do repositório (ex: /nome-do-arquivo.ext)
         const apiUrl = `https://api.github.com/repos/${repo}/contents/${encodeURIComponent(fileName)}`;
 
-        // Verificar se o arquivo já existe no GitHub para obter o SHA
+        // Verificar se o arquivo já existe no GitHub para obter o SHA (necessário para atualizar caso já exista)
         let sha = null;
         try {
             const checkRes = await fetch(`${apiUrl}?ref=${targetBranch}`, {
@@ -39,7 +49,7 @@ export default async function handler(req, res) {
                 sha = checkData.sha;
             }
         } catch (e) {
-            // Se o arquivo não existir ainda, prossegue sem SHA
+            // Se o arquivo for novo, prossegue sem SHA
         }
 
         const bodyData = {
@@ -51,7 +61,7 @@ export default async function handler(req, res) {
             bodyData.sha = sha;
         }
 
-        // Fazer commit/upload para o GitHub
+        // Fazer commit/upload para o GitHub na raiz
         const uploadRes = await fetch(apiUrl, {
             method: 'PUT',
             headers: {
@@ -69,7 +79,7 @@ export default async function handler(req, res) {
             return res.status(200).json({
                 success: true,
                 url: resData.content?.html_url || `https://github.com/${repo}`,
-                message: 'Arquivo enviado com sucesso!'
+                message: 'Arquivo enviado com sucesso para a raiz do repositório!'
             });
         } else {
             return res.status(uploadRes.status).json({
