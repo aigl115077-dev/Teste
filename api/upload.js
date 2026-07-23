@@ -1,5 +1,5 @@
 // Se você preferir fixar o repositório diretamente no código em vez de usar variáveis da Vercel, preencha abaixo:
-const DEFAULT_REPO = ""; // Exemplo: "seu-usuario/seu-repositorio"
+const DEFAULT_REPO = "aigl115077-dev/Teste";
 
 export default async function handler(req, res) {
     if (req.method !== 'POST') {
