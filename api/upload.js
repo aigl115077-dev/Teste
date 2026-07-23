@@ -1,3 +1,6 @@
+// Se você preferir fixar o repositório diretamente no código em vez de usar variáveis da Vercel, preencha abaixo:
+const DEFAULT_REPO = ""; // Exemplo: "seu-usuario/seu-repositorio"
+
 export default async function handler(req, res) {
     if (req.method !== 'POST') {
         return res.status(405).json({ message: 'Método não permitido.' });
@@ -6,19 +9,19 @@ export default async function handler(req, res) {
     try {
         const { branch, commitMsg, fileName, fileBase64 } = req.body;
 
-        // Recupera as variáveis de ambiente configuradas na Vercel
+        // Recupera as variáveis de ambiente configuradas na Vercel ou usa os fallbacks
         const token = process.env.GITHUB_TOKEN;
-        const repo = process.env.GITHUB_REPO || req.body.repo;
+        const repo = process.env.GITHUB_REPO || DEFAULT_REPO || req.body.repo;
 
         if (!token) {
             return res.status(500).json({ 
-                message: 'A variável de ambiente GITHUB_TOKEN não está configurada na Vercel.' 
+                message: 'A variável de ambiente GITHUB_TOKEN não está configurada na Vercel (ou precisa de Fazer Redeploy).' 
             });
         }
 
         if (!repo) {
             return res.status(500).json({ 
-                message: 'A variável de ambiente GITHUB_REPO (ex: usuario/repositorio) não está configurada na Vercel.' 
+                message: 'A variável GITHUB_REPO não foi encontrada. Faça um Redeploy na Vercel ou defina DEFAULT_REPO no arquivo api/upload.js.' 
             });
         }
 
