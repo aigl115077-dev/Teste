@@ -292,10 +292,6 @@
                     <input type="text" id="ghBranch" class="form-control" value="main" placeholder="main" required>
                 </div>
 
-                <div class="form-group">
-                    <label for="ghToken">Personal Access Token (GitHub Token)</label>
-                    <input type="password" id="ghToken" class="form-control" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" required>
-                </div>
 
                 <div class="form-group">
                     <label for="commitMsg">Mensagem de Commit (Opcional)</label>
@@ -408,66 +404,39 @@
 
             const repo = document.getElementById('ghRepo').value.trim();
             const branch = document.getElementById('ghBranch').value.trim() || 'main';
-            const token = document.getElementById('ghToken').value.trim();
-            const commitMsg = document.getElementById('commitMsg').value.trim() || `Upload ${selectedFile.name} via Web Interface`;
+            const commitMsg = document.getElementById('commitMsg').value.trim();
 
             statusEl.className = 'status-msg';
             statusEl.style.display = 'block';
-            statusEl.textContent = 'Lendo arquivo e enviando para o GitHub...';
+            statusEl.textContent = 'Lendo arquivo e enviando para o servidor...';
             btn.disabled = true;
 
             try {
                 // Converter arquivo para Base64
                 const base64Content = await fileToBase64(selectedFile);
-                const filePath = selectedFile.name;
 
-                // Verificar se o arquivo já existe para pegar o SHA (necessário para atualizar)
-                const apiUrl = `https://api.github.com/repos/${repo}/contents/${encodeURIComponent(filePath)}`;
-                
-                let sha = null;
-                try {
-                    const checkRes = await fetch(`${apiUrl}?ref=${branch}`, {
-                        headers: {
-                            'Authorization': `token ${token}`,
-                            'Accept': 'application/vnd.github.v3+json'
-                        }
-                    });
-                    if (checkRes.ok) {
-                        const checkData = await checkRes.json();
-                        sha = checkData.sha;
-                    }
-                } catch (e) {
-                    console.log('Arquivo novo ou repositório privado');
-                }
-
-                // Corpo do request para a API do GitHub
-                const bodyData = {
-                    message: commitMsg,
-                    content: base64Content,
-                    branch: branch
-                };
-                if (sha) {
-                    bodyData.sha = sha;
-                }
-
-                const uploadRes = await fetch(apiUrl, {
-                    method: 'PUT',
+                // Enviar para a rota da API da Vercel (onde o GITHUB_TOKEN está protegido)
+                const res = await fetch('/api/upload', {
+                    method: 'POST',
                     headers: {
-                        'Authorization': `token ${token}`,
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/vnd.github.v3+json'
+                        'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify(bodyData)
+                    body: JSON.stringify({
+                        repo: repo,
+                        branch: branch,
+                        commitMsg: commitMsg,
+                        fileName: selectedFile.name,
+                        fileBase64: base64Content
+                    })
                 });
 
-                const resData = await uploadRes.json();
+                const resData = await res.json();
 
-                if (uploadRes.ok) {
+                if (res.ok && resData.success) {
                     statusEl.className = 'status-msg success';
-                    const fileUrl = resData.content?.html_url || `https://github.com/${repo}`;
-                    statusEl.innerHTML = `✅ Arquivo enviado com sucesso!<br><a href="${fileUrl}" target="_blank">Ver no GitHub (${selectedFile.name})</a>`;
+                    statusEl.innerHTML = `✅ ${resData.message}<br><a href="${resData.url}" target="_blank">Ver arquivo no GitHub</a>`;
                 } else {
-                    throw new Error(resData.message || 'Erro ao enviar para o GitHub.');
+                    throw new Error(resData.message || 'Erro ao processar upload na Vercel.');
                 }
             } catch (err) {
                 statusEl.className = 'status-msg error';
