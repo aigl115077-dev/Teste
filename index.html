@@ -282,18 +282,6 @@
         <div id="tab-upload" class="tab-content active">
             <form id="uploadForm" onsubmit="handleUpload(event)">
                 
-
-                <div class="form-group">
-                    <label for="ghBranch">Branch</label>
-                    <input type="text" id="ghBranch" class="form-control" value="main" placeholder="main" required>
-                </div>
-
-
-                <div class="form-group">
-                    <label for="commitMsg">Mensagem de Commit (Opcional)</label>
-                    <input type="text" id="commitMsg" class="form-control" placeholder="Upload via Web Interface">
-                </div>
-
                 <div class="dropzone" id="dropzone" onclick="document.getElementById('fileInput').click()">
                     <svg viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
@@ -309,7 +297,7 @@
                 </div>
 
                 <button type="submit" class="btn" id="uploadBtn">
-                    <span>Enviar para o Git</span>
+                    <span>Fazer Upload para a Vercel</span>
                 </button>
             </form>
 
@@ -398,39 +386,25 @@
                 return;
             }
 
-            const branch = (document.getElementById('ghBranch')?.value || 'main').trim();
-            const commitMsg = (document.getElementById('commitMsg')?.value || '').trim();
-
             statusEl.className = 'status-msg';
             statusEl.style.display = 'block';
-            statusEl.textContent = 'Lendo arquivo e enviando para o servidor...';
+            statusEl.textContent = 'Enviando arquivo para o Vercel Blob...';
             btn.disabled = true;
 
             try {
-                // Converter arquivo para Base64
-                const base64Content = await fileToBase64(selectedFile);
-
-                // Enviar para a rota da API da Vercel (onde o GITHUB_TOKEN e GITHUB_REPO estão protegidos)
-                const res = await fetch('/api/upload', {
+                // Enviar o arquivo para a rota Vercel Blob (/api/upload)
+                const res = await fetch(`/api/upload?filename=${encodeURIComponent(selectedFile.name)}`, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        branch: branch,
-                        commitMsg: commitMsg,
-                        fileName: selectedFile.name,
-                        fileBase64: base64Content
-                    })
+                    body: selectedFile
                 });
 
                 const resData = await res.json();
 
                 if (res.ok && resData.success) {
                     statusEl.className = 'status-msg success';
-                    statusEl.innerHTML = `✅ ${resData.message}<br><a href="${resData.url}" target="_blank">Ver arquivo no GitHub</a>`;
+                    statusEl.innerHTML = `✅ ${resData.message}<br><br><a href="${resData.url}" target="_blank" style="color: #60a5fa; font-weight: bold; text-decoration: underline;">Baixar arquivo (${selectedFile.name})</a>`;
                 } else {
-                    throw new Error(resData.message || 'Erro ao processar upload na Vercel.');
+                    throw new Error(resData.message || 'Erro ao processar upload no Vercel Blob.');
                 }
             } catch (err) {
                 statusEl.className = 'status-msg error';
