@@ -8,9 +8,10 @@ export default async function handler(req, res) {
     try {
         const filename = req.query.filename || `upload-${Date.now()}`;
         
-        // Procura dinamicamente o token caso a Vercel tenha usado um prefixo (ex: testeblob_READ_WRITE_TOKEN)
-        const tokenKey = Object.keys(process.env).find(k => k.endsWith('_READ_WRITE_TOKEN')) || 'BLOB_READ_WRITE_TOKEN';
-        const token = process.env.BLOB_READ_WRITE_TOKEN || process.env[tokenKey];
+        // Prioriza o token do novo Blob 'teste-blob' (testeblob_READ_WRITE_TOKEN) para ignorar tokens de stores antigos/deletados
+        const token = process.env.testeblob_READ_WRITE_TOKEN || 
+                      process.env.BLOB_READ_WRITE_TOKEN || 
+                      process.env[Object.keys(process.env).find(k => k.endsWith('_READ_WRITE_TOKEN'))];
 
         if (!token) {
             return res.status(500).json({ 
